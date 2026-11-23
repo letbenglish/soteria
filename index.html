@@ -84,8 +84,9 @@ input{font:inherit;color:inherit}
 
 /* round */
 .roundhead{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:10px}
-.roundhead .big{font-size:40px;line-height:1}
-.roundhead .cards{text-align:right;color:var(--mute);font-size:14px}
+.roundhead>div:first-child{flex:1;min-width:0}
+.roundhead .big{font-size:40px;line-height:1.05;white-space:nowrap}
+.roundhead .cards{flex:none;text-align:right;color:var(--mute);font-size:14px;max-width:96px;line-height:1.2}
 .roundhead .cards b{display:block;color:var(--ink);font-size:24px}
 .prow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
 .prow:first-of-type{border-top:0}
@@ -449,6 +450,7 @@ function render(){
   else if(S.tab==="rules") body=renderRules();
   else body=renderCards();
   $("#app").innerHTML=head+body;
+  fitBig();
 }
 
 function renderGate(){
@@ -672,6 +674,9 @@ document.addEventListener("keydown",ev=>{
   if(ev.key==="Escape") closeSheet();
   if(ev.key==="Enter"&&ev.target.dataset.name!==undefined){const ins=[...document.querySelectorAll("[data-name]")];const k=ins.indexOf(ev.target);if(ins[k+1])ins[k+1].focus();else ev.target.blur();}
 });
+function fitBig(){document.querySelectorAll(".roundhead .big").forEach(el=>{let f=40;el.style.fontSize=f+"px";const w=el.parentElement.clientWidth;while(el.scrollWidth>w&&f>20){f-=1;el.style.fontSize=f+"px"}})}
+addEventListener("resize",fitBig);
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fitBig);
 function confetti(){
   if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const c=document.createElement("canvas");c.style.cssText="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:80";
