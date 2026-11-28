@@ -94,6 +94,9 @@ input{font:inherit;color:inherit}
 .prow .who .nm{font-weight:800;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .prow .who .meta{font-size:13px;color:var(--mute)}
 .prow.lock .meta{color:var(--yellow)}
+.taufebtn{margin:4px 0 12px;justify-content:flex-start;gap:12px;font-size:15.5px}
+.taufebtn img{width:28px;height:40px;object-fit:cover;border-radius:4px}
+.bidtag s{color:var(--dim)}
 .badge-start{color:var(--green);font-weight:800}
 .warn{background:rgba(239,193,45,.1);border:1px solid rgba(239,193,45,.3);color:#f4d97a;border-radius:12px;padding:10px 12px;font-size:14.5px;margin:10px 0}
 .warn.bad{background:rgba(226,83,63,.1);border-color:rgba(226,83,63,.35);color:#ffab9c}
@@ -216,7 +219,7 @@ de:{
   toPlay:"Ansagen fertig – spielen", confirmRound:"Runde werten", back:"Zurück",
   tooMany:(n)=>`Es gibt nur ${n} Stiche in dieser Runde.`,
   fewer:(a,n)=>`${a} von ${n} Stichen vergeben. Nur möglich, wenn die Sintflut einen Stich zerstört hat.`,
-  bid:"Ansage", taufeHint:"Taufe: Ansage ±1", standings:"Stand", sheet:"Punktetabelle", tapEdit:"Tippe auf eine Runde, um sie zu korrigieren.",
+  bid:"Ansage", taufeHint:"Taufe: Ansage ±1", taufeBtn:"Taufe gespielt – Ansage ändern", taufeSub:"Wer den Stich mit der Taufe gewinnt, ändert seine Ansage um 1 nach oben oder unten.", done:"Fertig", standings:"Stand", sheet:"Punktetabelle", tapEdit:"Tippe auf eine Runde, um sie zu korrigieren.",
   undo:"Letzte Runde rückgängig", endGame:"Spiel beenden", endConfirm:"Wirklich beenden?", yes:"Ja", no:"Nein",
   finished:"Spiel beendet", winner:"gewinnt", playAgain:"Gleiche Spieler, neues Spiel", fresh:"Neue Spieler",
   editRound:"Runde korrigieren", save:"Speichern", tricks:"Stiche",
@@ -244,7 +247,7 @@ en:{
   toPlay:"Bids done – play", confirmRound:"Score round", back:"Back",
   tooMany:(n)=>`There are only ${n} tricks this round.`,
   fewer:(a,n)=>`${a} of ${n} tricks assigned. Only possible if the Flood destroyed a trick.`,
-  bid:"Bid", taufeHint:"Baptism: bid ±1", standings:"Standings", sheet:"Score sheet", tapEdit:"Tap a round to correct it.",
+  bid:"Bid", taufeHint:"Baptism: bid ±1", taufeBtn:"Baptism played – change a bid", taufeSub:"Whoever wins the trick with Baptism changes their bid by 1, up or down.", done:"Done", standings:"Standings", sheet:"Score sheet", tapEdit:"Tap a round to correct it.",
   undo:"Undo last round", endGame:"End game", endConfirm:"End the game?", yes:"Yes", no:"No",
   finished:"Game over", winner:"wins", playAgain:"Same players, new game", fresh:"New players",
   editRound:"Correct round", save:"Save", tricks:"Tricks",
@@ -272,7 +275,7 @@ pt:{
   toPlay:"Palpites feitos – jogar", confirmRound:"Fechar rodada", back:"Voltar",
   tooMany:(n)=>`Só existem ${n} vazas nesta rodada.`,
   fewer:(a,n)=>`${a} de ${n} vazas distribuídas. Só é possível se o Dilúvio destruiu uma vaza.`,
-  bid:"Palpite", taufeHint:"Batismo: palpite ±1", standings:"Classificação", sheet:"Tabela de pontos", tapEdit:"Toque numa rodada para corrigir.",
+  bid:"Palpite", taufeHint:"Batismo: palpite ±1", taufeBtn:"Batismo jogado – mudar palpite", taufeSub:"Quem ganhar a vaza com o Batismo muda o palpite em 1, para cima ou para baixo.", done:"Pronto", standings:"Classificação", sheet:"Tabela de pontos", tapEdit:"Toque numa rodada para corrigir.",
   undo:"Desfazer última rodada", endGame:"Encerrar jogo", endConfirm:"Encerrar o jogo?", yes:"Sim", no:"Não",
   finished:"Fim de jogo", winner:"venceu", playAgain:"Mesmos jogadores, novo jogo", fresh:"Novos jogadores",
   editRound:"Corrigir rodada", save:"Salvar", tricks:"Vazas",
@@ -479,18 +482,18 @@ function renderScore(){
       html+=`<div class="prow ${isLast?"lock":""}"><div class="who"><div class="nm">${esc(g.players[pi])}</div><div class="meta">${meta}</div></div>${stepper("bid",pi,cur.bids[pi],0,cards)}</div>`;
     });
     const sum=cur.bids.reduce((a,b)=>a+b,0);
-    const bad=sum===cards;
+    const bad=sum===cards&&!(cur.orig&&cur.orig.some((b,i)=>b!==cur.bids[i]));
     html+=`<div class="sumline"><span>${tt.sumBids}</span><span><b>${sum}</b> · ${cards}</span></div>`;
     if(bad) html+=`<div class="warn bad">${tt.forbidden(cards)}</div>`;
     html+=`<button class="btn" data-act="toPlay" ${bad?"disabled":""}>${tt.toPlay}</button>`;
   } else {
+    const orig=cur.orig||cur.bids;
     ord.forEach((pi,k)=>{
-      html+=`<div class="prow"><div class="who"><div class="nm">${esc(g.players[pi])}</div><div class="bidtag">${tt.bid}: <b style="color:var(--ink)">${cur.bids[pi]}</b>
-        <button class="mini" data-act="taufe" data-p="${pi}" data-d="-1" ${cur.bids[pi]<=0?"disabled":""} aria-label="-1">−1</button><button class="mini" data-act="taufe" data-p="${pi}" data-d="1" ${cur.bids[pi]>=cards?"disabled":""} aria-label="+1">+1</button></div></div>${stepper("won",pi,cur.won[pi],0,cards)}</div>`;
+      html+=`<div class="prow"><div class="who"><div class="nm">${esc(g.players[pi])}</div><div class="bidtag">${tt.bid}: ${orig[pi]!==cur.bids[pi]?`<s>${orig[pi]}</s> → <b style="color:var(--blue)">${cur.bids[pi]}</b> 💧`:`<b style="color:var(--ink)">${cur.bids[pi]}</b>`}</div></div>${stepper("won",pi,cur.won[pi],0,cards)}</div>`;
     });
     const sum=cur.won.reduce((a,b)=>a+b,0);
     html+=`<div class="sumline"><span>${tt.sumTricks}</span><span><b>${sum}</b> · ${cards}</span></div>`;
-    html+=`<div class="sub" style="font-size:13.5px;margin-top:-6px">±1 = ${tt.taufeHint}</div>`;
+    if(S.specials.taufe) html+=`<button class="btn ghost taufebtn" data-act="taufeOpen"><img src="img/taufe.jpg" alt="">${tt.taufeBtn}</button>`;
     if(sum>cards) html+=`<div class="warn bad">${tt.tooMany(cards)}</div>`;
     else if(sum<cards) html+=`<div class="warn">${tt.fewer(sum,cards)}</div>`;
     html+=`<div class="row" style="gap:8px"><button class="btn ghost" style="width:auto;flex:none" data-act="backBid">${tt.back}</button><button class="btn" data-act="confirm" ${sum>cards?"disabled":""}>${tt.confirmRound}</button></div>`;
@@ -615,7 +618,7 @@ function freshCur(n){return {phase:"bid",bids:Array(n).fill(0),won:Array(n).fill
 document.addEventListener("click",ev=>{
   const el=ev.target.closest("button,[data-sp],[data-close],tr[data-edit]"); if(!el) return;
   const d=el.dataset;
-  if(d.close!==undefined && ev.target===el){closeSheet();return}
+  if(d.close!==undefined && ev.target===el){closeSheet();if(S.game)render();return}
   if(d.close!==undefined && el.tagName==="BUTTON"){closeSheet();return}
   if(d.setlang){S.lang=d.setlang;$("#layer").innerHTML="";save();render();return}
   if(d.lang){S.lang=d.lang;save();render();return}
@@ -632,6 +635,7 @@ document.addEventListener("click",ev=>{
     if(d.step==="bid"){g.cur.bids[p]=Math.max(0,g.cur.bids[p]+dd)}
     else if(d.step==="won"){g.cur.won[p]=Math.max(0,g.cur.won[p]+dd)}
     else if(d.step==="rounds"){const n=Math.max(2,S.players.filter(s=>s.trim()).length);S.roundsOverride=Math.min(40,Math.max(1,(S.roundsOverride??autoRounds(n,S.specials))+dd))}
+    else if(d.step==="tbid"){const o=g.cur.orig[p],cards=cardsIn(g.rounds.length+1);g.cur.bids[p]=Math.max(Math.max(0,o-1),Math.min(Math.min(cards,o+1),g.cur.bids[p]+dd));save();drawTaufe();return}
     else if(d.step==="ebid"){EDIT.bids[p]=Math.max(0,Math.min(EDIT.cards,EDIT.bids[p]+dd));drawEdit();return}
     else if(d.step==="ewon"){EDIT.won[p]=Math.max(0,Math.min(EDIT.cards,EDIT.won[p]+dd));drawEdit();return}
     save();render();return;
@@ -640,18 +644,19 @@ document.addEventListener("click",ev=>{
   const g=S.game, tt=t();
   if(a==="addp"){if(S.players.length<8){S.players.push("");save();render();const ins=document.querySelectorAll("[data-name]");ins[ins.length-1]?.focus();}}
   else if(a==="start"){const ps=S.players.map(s=>s.trim()).filter(Boolean);if(ps.length<2)return;newGame(ps);save();render();window.scrollTo({top:0})}
-  else if(a==="toPlay"){g.cur.phase="play";g.cur.won=Array(g.players.length).fill(0);save();render();window.scrollTo({top:0,behavior:"smooth"})}
+  else if(a==="toPlay"){g.cur.phase="play";if(!g.cur.orig)g.cur.orig=[...g.cur.bids];g.cur.won=Array(g.players.length).fill(0);save();render();window.scrollTo({top:0,behavior:"smooth"})}
   else if(a==="backBid"){g.cur.phase="bid";save();render()}
-  else if(a==="taufe"){const p=+d.p;const cards=cardsIn(g.rounds.length+1);g.cur.bids[p]=Math.max(0,Math.min(cards,g.cur.bids[p]+(+d.d)));save();render()}
+  else if(a==="taufeOpen"){drawTaufe()}
+  else if(a==="taufeDone"){closeSheet();render()}
   else if(a==="confirm"){
     const n=g.players.length, cards=cardsIn(g.rounds.length+1);
     const pts=g.cur.bids.map((b,i)=>points(b,g.cur.won[i],cards,n));
-    g.rounds.push({cards,bids:[...g.cur.bids],won:[...g.cur.won],pts});
+    g.rounds.push({cards,bids:[...g.cur.bids],won:[...g.cur.won],pts,orig:g.cur.orig?[...g.cur.orig]:undefined});
     g.cur=freshCur(n);
     const fin=g.rounds.length>=g.totalRounds; if(fin) g.done=true;
     save();render();window.scrollTo({top:0,behavior:"smooth"});if(fin) confetti();
   }
-  else if(a==="undo"){const r=g.rounds.pop();if(r){g.cur={phase:"play",bids:r.bids,won:r.won};g.done=false;save();render()}}
+  else if(a==="undo"){const r=g.rounds.pop();if(r){g.cur={phase:"play",bids:r.bids,won:r.won,orig:r.orig||[...r.bids]};g.done=false;save();render()}}
   else if(a==="end"){confirmSheet(tt.endConfirm,()=>{g.done=true;save();render();window.scrollTo({top:0});confetti()})}
   else if(a==="again"){newGame(g.players);save();render();window.scrollTo({top:0})}
   else if(a==="fresh"){S.game=null;save();render();window.scrollTo({top:0})}
@@ -674,6 +679,11 @@ document.addEventListener("keydown",ev=>{
   if(ev.key==="Escape") closeSheet();
   if(ev.key==="Enter"&&ev.target.dataset.name!==undefined){const ins=[...document.querySelectorAll("[data-name]")];const k=ins.indexOf(ev.target);if(ins[k+1])ins[k+1].focus();else ev.target.blur();}
 });
+function drawTaufe(){
+  const g=S.game,tt=t(),cards=cardsIn(g.rounds.length+1),o=g.cur.orig;
+  const rows=g.players.map((p,i)=>`<div class="prow"><div class="who"><div class="nm">${esc(p)}</div><div class="bidtag">${tt.bid}: ${o[i]}${o[i]!==g.cur.bids[i]?` → <b style="color:var(--blue)">${g.cur.bids[i]}</b>`:""}</div></div>${stepper("tbid",i,g.cur.bids[i],Math.max(0,o[i]-1),Math.min(cards,o[i]+1))}</div>`).join("");
+  sheet(`<div class="hero"><img src="img/taufe.jpg" alt="" style="width:110px"></div><h3 class="rune">${CARDS.find(c=>c.id==="taufe").name[L()]}</h3><p class="sub" style="text-align:center">${tt.taufeSub}</p>${rows}<div style="margin-top:14px"><button class="btn" data-act="taufeDone">${tt.done}</button></div>`);
+}
 function fitBig(){document.querySelectorAll(".roundhead .big").forEach(el=>{let f=40;el.style.fontSize=f+"px";const w=el.parentElement.clientWidth;while(el.scrollWidth>w&&f>20){f-=1;el.style.fontSize=f+"px"}})}
 addEventListener("resize",fitBig);
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fitBig);
